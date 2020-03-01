@@ -15,7 +15,10 @@
     </video> 
     <div class="description">
      <h3>Description</h3>
-     <p>You whistle into the microphone and the microphone records the sound. Afterwards the recording is analyzed and translated into musical notes.</p>
+     <p>This tool will record sound over the microphone, analyzes the recording and translates it into a musical expression. This is done by using Fast-Fourier-Transform (FFT) to get the frequencies of the recording at a certain time. The frequencies are paired with the time interval for the frequency. With these two values a musical note can be constructed and will be translated into the LilyPond format. The tool will then generate a digital notesheet containing the recognized melody as well as a MIDI file, by using the constructed LilyPond string from the previous processing steps. The midi file will then be represented together with the digital notesheet inside a custom Python GUI.</p>
+     <p>If a Raspberry Pi is used, LilyPond can not be installed. That is why the tool will detect if a Raspberry Pi is used and will then open the HackLily frontend to render the recognized melody. In this case, the LilyPond string will in be passed as a GET parameter in the URL.</p>
+     <p>Tags: C, Python, Linux, Raspberry Pi, LilyPond, Music Transcription, FFT, Doxygen, PyQt</p>
+     <p><a href="https://github.com/lulu98/music-transcription-tool">GitHub</a></p>
     </div>
 </div>
 <hr>
@@ -27,7 +30,9 @@
     </video> 
     <div class="description">
      <h3>Description</h3>
-     <p>My Description</p>
+     <p>This tool will recognize chords played into the microphone in real-time. The sound is received over the microphone and translated into frequencies by a FFT. Because a chord consists of multiple musical notes, multiple frequencies need to be detected. This is done by using just the few frequencies with the highest intensity in the frequency spectrum. The frequencies are then translated into musical notes and printed on the terminal. To simplify the operation of the tool, another custom GUI is provided with which the user can generate sinusoid sounds and construct their own chords. The GUI is implemented in Python.</p>
+     <p>Tags: C, Python, Linux, Raspberry Pi, LilyPond, Music Transcription, FFT, Doxygen, PyQt</p>
+     <p><a href="https://github.com/lulu98/music-transcription-tool">GitHub</a></p>
     </div>
 </div>
 <hr>
@@ -39,7 +44,9 @@
     </video> 
     <div class="description">
      <h3>Description</h3>
-     <p>My Description</p>
+     <p>This tool will record sound over the microphone and analyze the recording. A FFT will be applied linearly to the recording after certain time intervals and a corresponding frequency spectrum is generated. This will result in a Audio Spectrogram. The Audio Spectrogram as well as the audio file is combined in a custom GUI written in Python.</p>
+     <p>Tags: C, Python, Linux, Raspberry Pi, LilyPond, Music Transcription, FFT, Doxygen, PyQt</p>
+     <p><a href="https://github.com/lulu98/music-transcription-tool">GitHub</a></p>
     </div>
 </div>
 </body>

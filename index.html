@@ -141,81 +141,147 @@ body {
         color: white;
         text-align: center;
     }
+    
+    .collapsible {
+      background-color: #777;
+      font-family: Helvetica, sans-serif;
+      color: white;
+      cursor: pointer;
+      padding: 18px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+      font-size: 15px;
+    }
+
+    .active, .collapsible:hover {
+      background-color: #555;
+    }
+
+    .collapsible_content {
+      padding: 0 18px;
+      display: none;
+      overflow: hidden;
+      background-color: #474e5d;
+    }
 </style>
 </head>
 <body>
-<h1 >My Projects</h1>
-<div class="timeline">
-  <div class="container left">
-    <div class="content">
-      <h2>02-2020: Music Transcription Tool</h2>
-      <p>My Description</p>
-      <a href="./projects/music_transcription.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>09-2019: Retro Games</h2>
-      <p>Description</p>
-      <a href="./projects/retro_games.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container left">
-    <div class="content">
-      <h2>05-2019: Chess Game</h2>
-      <p>Description</p> 
-      <a href="./projects/chess_game.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>04-2019: Tic-Tac-Toe Game</h2>
-      <p>Description</p>
-      <a href="./projects/tic_tac_toe_game.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container left">
-    <div class="content">
-      <h2>11-2018: Rocket Game</h2>
-      <p>Description</p> 
-      <a href="./projects/rocket_game.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>10-2018: Number System Converter</h2>
-      <p>Description</p>
-      <a href="./projects/number_system_converter.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container left">
-    <div class="content">
-      <h2>09-2018: Escape the room</h2>
-      <p>Description</p>
-      <a href="./projects/escape_the_room.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>09-2018: Voice Controlled Calculator</h2>
-      <p>Description</p> 
-      <a href="./projects/voice_controlled_calculator.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container left">
-    <div class="content">
-      <h2>09-2018: Voice Controlled Quiz</h2>
-      <p>Description</p>
-      <a href="./projects/voice_controlled_quiz.html">Demonstration</a>
-    </div>
-  </div>
-  <div class="container right">
-    <div class="content">
-      <h2>09-2018: 10 Finger System</h2>
-      <p>Description</p> 
-      <a href="./projects/ten_finger_system.html">Demonstration</a>
-    </div>
-  </div>
+<h1>My Website</h1>
+<hr>
+<button type="button" class="collapsible">Curriculum</button>
+<div class="collapsible_content">
+  <iframe src="./assets/curriculum.pdf" width="100%" height="1000px"></iframe>
 </div>
+<button type="button" class="collapsible">My Projects</button>
+<div class="collapsible_content">
+  <div class="timeline">
+      <div class="container left">
+        <div class="content">
+          <h2>Feb 2020: Music Transcription Tool</h2>
+          <p>This application is a first attempt to record sound, translate the recording into a musical notation and output the result as a digital notesheet.</p>
+          <p>Furthermore, the application can be divided into 3 different tools: 
+                <ul>
+                  <li>Melody Detection</li>
+                  <li>Chord Detection</li>
+                  <li>Audio Spectrogram</li>
+                </ul>
+          </p>
+          <p>Tags: C, Python, Linux, Raspberry Pi, LilyPond, Music Transcription, FFT, Doxygen, PyQt</p>
+          <p><a href="./projects/music_transcription.html">Demonstration</a> | <a href="https://github.com/lulu98/music-transcription-tool">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <h2>Sep 2019: Retro Games</h2>
+          <p>A Web Application featuring some of the old retro games like Pong, Snake, Tetris and Space Invaders.</p>
+          <p>Tags: HTML5, CSS, JavaScript, PHP, Pixel Animation, Web Development</p>
+          <p><a href="./projects/retro_games.html">Demonstration</a> | <a href="https://github.com/lulu98/retro_games">GitHub</a> | <a href="https://fabricative-folder.000webhostapp.com/index.html">Website</a></p>
+        </div>
+      </div>
+      <div class="container left">
+        <div class="content">
+          <h2>May 2019: Chess Game</h2>
+          <p>A chess game that you can play with another person.</p> 
+          <p>Tags: Python, PyCharm, Graphics Library, Game Development</p>
+          <p><a href="./projects/chess_game.html">Demonstration</a> | <a href="https://github.com/lulu98/my-chess-game">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <h2>April 2019: Tic-Tac-Toe Game</h2>
+          <p>A Tic-Tac-Toe game that you can play with another person.</p>
+          <p>Tags: Python, PyCharm, Graphics Library, Game Development</p>
+          <p><a href="./projects/tic_tac_toe_game.html">Demonstration</a> | <a href="https://github.com/lulu98/tic-tac-toe-game">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container left">
+        <div class="content">
+          <h2>Nov 2018: Rocket Game</h2>
+          <p>In this game, you have to steer a rocket from a launching pad all the way to a landing pad safely. You will encounter enemies and have to avoid obstacles along the way.</p>
+          <p>Tags: C#, Unity, Game Development</p>
+          <p><a href="./projects/rocket_game.html">Demonstration</a> | <a href="https://github.com/lulu98/land-the-rocket-safely">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <h2>Oct 2018: Number System Converter</h2>
+          <p>This tool can translate any number from a certain base (2-16) into another base (2-16).</p>
+          <p>Tags: C#, .NET, Visual Studio, Number System Conversion</p> 
+          <p><a href="./projects/number_system_converter.html">Demonstration</a> | <a href="https://github.com/lulu98/number-system-converter">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container left">
+        <div class="content">
+          <h2>Sep 2018: Escape the room</h2>
+          <p>In this game, the player has to find a way out of the building by solving a riddle.</p>
+          <p>Tags: C++, Unreal Engine, UE4, Visual Studio, Game Development</p> 
+          <p><a href="./projects/escape_the_room.html">Demonstration</a> | <a href="https://github.com/lulu98/escape-the-room">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <h2>09-2018: Voice Controlled Calculator</h2>
+          <p>A calculator that can be controlled by either pressing the buttons or by using your voice.</p> 
+          <p>Tags: C#, .NET, Visual Studio, Speech Recognition</p>
+          <p><a href="./projects/voice_controlled_calculator.html">Demonstration</a> | <a href="https://github.com/lulu98/voice-controlled-calculator">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container left">
+        <div class="content">
+          <h2>Sep 2018: Voice Controlled Quiz</h2>
+          <p>A quiz that can be controlled by either pressing the buttons or by using your voice.</p>
+          <p>Tags: C#, .NET, Visual Studio, Database, Speech Recognition</p>
+          <p><a href="./projects/voice_controlled_quiz.html">Demonstration</a> | <a href="https://github.com/lulu98/quizmaster-2018">GitHub</a></p>
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <h2>Sep 2018: 10 Finger System</h2>
+          <p>A small tool that should help to improve your typing skills.</p> 
+          <p>Tags: C#, .NET, Visual Studio</p>
+          <p><a href="./projects/ten_finger_system.html">Demonstration</a> | <a href="https://github.com/lulu98/learn-to-type-with-10-fingers">Github</a></p>
+        </div>
+      </div>
+    </div>
+</div>
+
+<script>
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
+</script>
 </body>
 </html> 
