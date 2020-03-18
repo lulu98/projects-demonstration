@@ -7,7 +7,7 @@
         table {  
             color: #333; /* Lighten up font color */
             font-family: Helvetica, Arial, sans-serif; /* Nicer font */
-            width: 60%; 
+            width: 50%; 
             border-collapse: collapse; 
             border-spacing: 0;
             margin: auto;
@@ -66,12 +66,17 @@
           border: 1px solid #ddd;
           /*margin-bottom: 12px;*/
         }
-
+        #chartdiv {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+          width: 80%;
+          height: 500px;
+          background-color: white;
+          margin:auto;
+        }
     </style>
     <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
     <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="./papaparse.min.js"></script>
 </head>
 <body>
 <h1>COVID19 Tracker</h1>
@@ -114,19 +119,28 @@
 </table>
 <hr>
 <h2>Country Ranking</h2>
-<table id="table">
-    <tr>
-        <th>Ranking</th>
-        <th>Country</th>
-        <th>Cases</th>
-        <th>Deaths</th>
-        <th>Recovered</th>
-    </tr>
-</table>
+<div id="container">
+    <table id="table">
+        <tr>
+            <th>Ranking</th>
+            <th>Country</th>
+            <th>Cases</th>
+            <th>Deaths</th>
+            <th>Recovered</th>
+        </tr>
+    </table>
+    <div id="barChartContainer" style="height: 330px; width: 50%;"></div>
+</div>
 <hr>
 <h2>Map</h2>
 <div id='map'><!-- Plotly chart will be drawn inside this DIV --></div>
-<p></p>   
+<hr>
+<h2>Development over Time</h2>
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/charts.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<div id="chartdiv"></div>
+<p></p>
 <script> 
     var api_host = "coronavirus-monitor.p.rapidapi.com";
     var api_key = "c568655970msh79006d28587cddep1a02e0jsnb54713e63de1";
@@ -143,6 +157,9 @@
     var totalConfirmedTimeline;
     var totalDeathsTimeline;
     var totalRecoveredTimeline;
+    var dates;
+    var allData;
+    var dateIndex = 0;
         
     
     function myFunction() {
@@ -349,9 +366,9 @@
             
             var chart_title = "";
             if(province === ''){
-                chart_title = "COVID19 Development - " + country;
+                chart_title = country;
             }else{
-                chart_title = "COVID19 Development - " + province + ", " + country;  
+                chart_title = province + ", " + country;  
             }
             var chart = new CanvasJS.Chart("chartContainer", {
                 title:{
@@ -517,8 +534,8 @@
                 countrycolor: 'rgb(255, 255, 255)',
                 showland: true,
                 landcolor: 'rgb(217, 217, 217)',
-                showlakes: true,
-                lakecolor: 'rgb(255, 255, 255)',
+                //showlakes: true,
+                //lakecolor: 'rgb(255, 255, 255)',
                 subunitcolor: 'rgb(255, 255, 255)',
                 lonaxis: {},
                 lataxis: {}
@@ -554,6 +571,74 @@
                     cell5.innerHTML = countries[i]["total_recovered"];
                 }
                 //document.getElementById("textField").innerHTML = response["countries_stat"][0]["country_name"];
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/cases_by_country.php");
+        xhr.setRequestHeader("x-rapidapi-host", api_host);
+        xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+        xhr.send(data);
+    }
+    
+    function setUpBarChart(){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var total = parseInt(response["total_cases"].replace(',',''));
+                setUpBarChartHelper(total);
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php");
+        xhr.setRequestHeader("x-rapidapi-host", api_host);
+        xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+        xhr.send(data);
+    }
+    
+    function setUpBarChartHelper(total){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var countries = response["countries_stat"];
+                var chartData = [];
+                var sum = 0;
+                for(var i = 0; i < 10; i++){
+                    var cases = parseInt(countries[i]["cases"].replace(',',''));
+                    chartData.push({y: ((cases / total) * 100).toFixed(2), label: countries[i]["country_name"]});
+                    sum = sum + cases;
+                }
+                chartData.push({y: (((total - sum) / total) * 100).toFixed(2), label: "Others"});
+                var chart = new CanvasJS.Chart("barChartContainer", {
+                    theme: "light2", // "light1", "light2", "dark1", "dark2"
+                    exportEnabled: true,
+                    animationEnabled: true,
+                    /*title: {
+                        text: "Share among"
+                    },*/
+                    data: [{
+                        type: "pie",
+                        startAngle: 25,
+                        toolTipContent: "<b>{label}</b>: {y}%",
+                        showInLegend: "true",
+                        legendText: "{label}",
+                        indexLabelFontSize: 16,
+                        indexLabel: "{label} - {y}%",
+                        dataPoints: chartData
+                    }]
+                });
+                chart.render();
             }
         });
 
@@ -643,13 +728,201 @@
         getCountryData(this.value);
     }
     
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+
+    var chart = am4core.create("chartdiv", am4charts.XYChart);
+    chart.padding(40, 40, 40, 40);
+
+    chart.numberFormatter.bigNumberPrefixes = [
+      { "number": 1e+3, "suffix": "K" },
+      { "number": 1e+6, "suffix": "M" },
+      { "number": 1e+9, "suffix": "B" }
+    ];
+
+    var label = chart.plotContainer.createChild(am4core.Label);
+    label.x = am4core.percent(97);
+    label.y = am4core.percent(95);
+    label.horizontalCenter = "right";
+    label.verticalCenter = "middle";
+    label.dx = -15;
+    label.fontSize = 50;
+
+    var playButton = chart.plotContainer.createChild(am4core.PlayButton);
+    playButton.x = am4core.percent(97);
+    playButton.y = am4core.percent(95);
+    playButton.dy = -2;
+    playButton.verticalCenter = "middle";
+
+    var stepDuration = 1000;
+
+    var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.renderer.grid.template.location = 0;
+    categoryAxis.dataFields.category = "country";
+    categoryAxis.renderer.minGridDistance = 1;
+    categoryAxis.renderer.inversed = true;
+    categoryAxis.renderer.grid.template.disabled = true;
+
+    var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
+    valueAxis.min = 0;
+    valueAxis.rangeChangeEasing = am4core.ease.linear;
+    valueAxis.rangeChangeDuration = stepDuration;
+    valueAxis.extraMax = 0.1;
+
+    var series = chart.series.push(new am4charts.ColumnSeries());
+    series.dataFields.categoryY = "country";
+    series.dataFields.valueX = "cases";
+    series.tooltipText = "{valueX.value}"
+    series.columns.template.strokeOpacity = 0;
+    series.columns.template.column.cornerRadiusBottomRight = 5;
+    series.columns.template.column.cornerRadiusTopRight = 5;
+    series.interpolationDuration = stepDuration;
+    series.interpolationEasing = am4core.ease.linear;
+
+    var labelBullet = series.bullets.push(new am4charts.LabelBullet())
+    labelBullet.label.horizontalCenter = "right";
+    labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#.0as')}";
+    labelBullet.label.textAlign = "end";
+    labelBullet.label.dx = -10;
+
+    chart.zoomOutButton.disabled = true;
+
+    label.text = "";
+
+    var interval;
+
+    function play() {
+      if(!confirmedSet){
+            setTimeout(play, 100);
+      }else{
+            interval = setInterval(function(){
+                nextYear();
+            }, stepDuration)
+            nextYear();  
+      }
+    }
+
+    function stop() {
+      if (interval) {
+        clearInterval(interval);
+      }
+    }
+
+    function nextYear() {
+      dateIndex++
+      if(dateIndex >= dates.length){
+         dateIndex = 0;
+      }
+
+      var newData = allData[dates[dateIndex]];
+      var itemsWithNonZero = 0;
+
+      var temp = []
+      for(var i = 0; i < chart.data.length; i++){
+            temp.push(newData[i].cases);
+      }
+      var largest = 0;
+      for(var i = 0; i < 10; i++){
+          largest = Math.max.apply(Math, temp);
+          var index = temp.indexOf(largest);
+          if (index !== -1) temp.splice(index, 1);
+      }
+
+      for (var i = 0; i < chart.data.length; i++) {
+        chart.data[i].cases = newData[i].cases;
+        if(chart.data[i].cases < largest){
+           chart.data[i].cases = 0;
+        }
+        if (chart.data[i].cases > 0) {
+          itemsWithNonZero++;
+        }
+      }
+
+      series.interpolationDuration = stepDuration;
+      valueAxis.rangeChangeDuration = stepDuration;
+
+      chart.invalidateRawData();
+      label.text = dates[dateIndex];
+
+      categoryAxis.zoom({ start: 0, end: itemsWithNonZero / categoryAxis.dataItems.length });
+    }
+
+    function setData(){
+        if(!confirmedSet){
+           setTimeout(setData, 100);
+        }else{
+            var allTextLines = confirmed.split(/\r\n|\n/);
+            dates = allTextLines[0].split(',');
+            dates.splice(0,4);
+
+            allData = {};
+            for(var i = 0; i < dates.length; i++){
+                var arr = [];
+                for(var j = 1; j < allTextLines.length; j++){
+                    var line = allTextLines[j].split(',');
+                    var dict = {};
+                    if(line[0] === ''){
+                        dict["country"] = line[1];
+                    }else{
+                        dict["country"] = line[0] + ", " + line[1];
+                    }
+                    line.splice(0,4);
+                    var numberOfCases = parseInt(line[i].replace(',',''));
+                    if(numberOfCases < 0){
+                       numberOfCases = 0;
+                    }
+                    dict["cases"] = numberOfCases;
+                    arr.push(dict);
+                }
+                allData[dates[i]] = arr;  
+            }
+            //alert(allData[dates[2]]);
+        }
+    }
+
+    function setBarChartRace(){
+        if(!confirmedSet){
+           setTimeout(setBarChartRace, 100);
+        }else{
+            playButton.events.on("toggled", function(event) {
+              if (event.target.isActive) {
+                play();
+              }
+              else {
+                stop();
+              }
+            })
+
+            // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
+            series.columns.template.adapter.add("fill", function(fill, target){
+              return chart.colors.getIndex(target.dataItem.index);
+            });
+            label.text = dates[0];
+            categoryAxis.sortBySeries = series;
+            chart.data = JSON.parse(JSON.stringify(allData[dates[dateIndex]]));
+            categoryAxis.zoom({ start: 0, end: 1 / chart.data.length });
+
+            series.events.on("inited", function() {
+              setTimeout(function() {
+                playButton.isActive = true; // this starts interval
+              }, 1000)
+            })  
+
+            playButton.isActive = true;
+        }
+    }
+    
     function setUpWebsite(){
         setupDropDownMenu();
         document.getElementById("select").onclick = countrySelected;
         document.getElementById("select").click();
+        setUpBarChart();
         setUpRanking();
         setUpMap();
-        setGraphs("","Total");   
+        setGraphs("","Total");  
+        setData();
+        setBarChartRace();
     }
     
     setUpWebsite();
