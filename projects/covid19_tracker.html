@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="mystyle.css" />
+    <style>
+        table {  
+            color: #333; /* Lighten up font color */
+            font-family: Helvetica, Arial, sans-serif; /* Nicer font */
+            width: 60%; 
+            border-collapse: collapse; 
+            border-spacing: 0;
+            margin: auto;
+        }
+
+        td, th { border: 1px solid #CCC; height: 30px; } /* Make cells a bit taller */
+
+        th {  
+            background: #F3F3F3; /* Light grey background */
+            font-weight: bold; /* Make sure they're bold */
+        }
+
+        td {  
+            background: #FAFAFA; /* Lighter grey background */
+            text-align: center; /* Center our text */
+        }
+        .players {
+          -webkit-transition: opacity 0.5s ease-out;
+          -webkit-animation: autoScrolling 5s linear infinite;
+          height: 370px;
+        }
+        .players .list-group-item {
+          height: 2em;
+        }
+        
+        .list-group-item{
+            font-size: 20px;
+        }
+        
+        .list-group-item:hover{
+            cursor: pointer;
+            background-color: lightgray;
+        }
+        
+        nav ul{height:200px; width:400px; overflow:hidden; overflow-y:scroll;}
+        #chartContainer{
+            height: 370px; width: 100%;
+        }
+        #container{
+            display: flex;
+            margin: auto;
+            width: 80%;
+        }
+        
+        #map{
+            width: 60%;
+            margin: auto;
+        }
+        #myInput {
+          /*background-image: url('/css/searchicon.png');*/
+          background-position: 10px 12px;
+          background-repeat: no-repeat;
+          width: 100%;
+          font-size: 16px;
+          padding: 12px 20px 12px 40px;
+          border: 1px solid #ddd;
+          /*margin-bottom: 12px;*/
+        }
+
+    </style>
+    <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="./papaparse.min.js"></script>
+</head>
+<body>
+<h1>COVID19 Tracker</h1>
+<hr>
+<h2>Timeline / Country</h2>
+<div id="container">
+    <div class="row">
+      <div class="col-md-6">
+          <nav>
+                <ul id="countryList" class="list-group players">
+                  <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for countries..." title="Type in a country">
+                  <li class="list-group-item" onclick="setGraphs('','Total')">Total</li>
+                </ul>
+          </nav>
+      </div>
+    </div>
+    <div id="chartContainer"></div>
+</div>
+<hr>
+<h2>Stats / Country</h2>
+<table>
+    <tr>
+        <th>Country</th>
+        <td><select id="select">
+            <option value="Total">Total</option>
+        </select></td>
+    </tr>
+    <tr>
+        <th>Cases</th>
+        <td id="cases"></td>
+    </tr>
+    <tr>
+        <th>Deaths</th>
+        <td id="deaths"></td>
+    </tr>
+    <tr>
+        <th>Recovered</th>
+        <td id="recovered"></td>
+    </tr>
+</table>
+<hr>
+<h2>Country Ranking</h2>
+<table id="table">
+    <tr>
+        <th>Ranking</th>
+        <th>Country</th>
+        <th>Cases</th>
+        <th>Deaths</th>
+        <th>Recovered</th>
+    </tr>
+</table>
+<hr>
+<h2>Map</h2>
+<div id='map'><!-- Plotly chart will be drawn inside this DIV --></div>
+<p></p>   
+<script> 
+    var api_host = "coronavirus-monitor.p.rapidapi.com";
+    var api_key = "c568655970msh79006d28587cddep1a02e0jsnb54713e63de1";
+    var countries;
+    var country_data;
+    var country_text;
+    var confirmed;
+    var deaths;
+    var recovered;
+    var confirmedSet = false;
+    var deathsSet = false;
+    var recoveredSet = false;
+    var selectedCountry = "";
+    var totalConfirmedTimeline;
+    var totalDeathsTimeline;
+    var totalRecoveredTimeline;
+        
+    
+    function myFunction() {
+        var input, filter, ul, li, a, i, txtValue;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        ul = document.getElementById("countryList");
+        li = ul.getElementsByTagName("li");
+        for (i = 0; i < li.length; i++) {
+            a = li[i];
+            txtValue = a.textContent || a.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                li[i].style.display = "";
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+    
+    function toggleDataSeries(e) {
+        if (typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+            e.dataSeries.visible = false;
+        } else {
+            e.dataSeries.visible = true;
+        }
+        e.chart.render();
+    }
+    
+    Array.prototype.sortOn = function(key){
+        this.sort(function(a, b){
+            if(a[key] < b[key]){
+                return -1;
+            }else if(a[key] > b[key]){
+                return 1;
+            }
+            return 0;
+        });
+    }
+    
+    $(document).ready(function() {
+        confirmedSet = false;
+        deathsSet = false;
+        recoveredSet = false;
+        $.ajax({
+            type: "GET",
+            url: "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv",
+            dataType: "text",
+            success: function(data) {
+                confirmed = data;
+                var allTextLines = confirmed.split(/\r\n|\n/);
+                var mycountries = [];
+                for(var i = 1; i < allTextLines.length; i++){
+                    var line = allTextLines[i].split(',');
+                    var p = line[0];
+                    var c = line[1];
+                    mycountries.push({province: p, country: c});
+                }
+                mycountries.sortOn("country");
+                var ul = document.getElementById("countryList");
+                for(var i = 0; i < mycountries.length; i++){
+                    var li = document.createElement("li");
+                    if(mycountries[i].province === ''){
+                        li.appendChild(document.createTextNode(mycountries[i].country));
+                    }else{
+                        li.appendChild(document.createTextNode(mycountries[i].province + ", " + mycountries[i].country));    
+                    }
+                    li.setAttribute('class', "list-group-item");
+                    li.setAttribute('onclick', "setGraphs('" + mycountries[i].province + "','" + mycountries[i].country  + "')");
+                    ul.appendChild(li);
+                }
+                confirmedSet = true;
+            }
+        });
+        $.ajax({
+            type: "GET",
+            url: "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv",
+            dataType: "text",
+            success: function(data) {
+                deaths = data;
+                deathsSet = true;
+            }
+        });
+        $.ajax({
+            type: "GET",
+            url: "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv",
+            dataType: "text",
+            success: function(data) {
+                recovered = data;
+                recoveredSet = true;
+            }
+        });
+    });
+    
+    function setGraphs(province, country){
+        if(!confirmedSet || !deathsSet || !recoveredSet){
+           setTimeout(setGraphs, 100, province, country);
+        }else{
+            var allTextLines = confirmed.split(/\r\n|\n/);
+            var dates = allTextLines[0].split(',');
+            dates.splice(0,4);
+            for(var i = 0; i < dates.length; i++){
+                date = dates[i];
+                date = date.split('\/');
+                //dates[i] = date;
+                dates[i] = new Date(parseInt('20' + date[2]), parseInt(date[0])-1, parseInt(date[1]));
+            }
+            //alert(dates);
+            
+            //calculate total data
+            totalConfirmedTimeline = [];
+            for(var i = 0; i < dates.length; i++){
+                var sum = 0;
+                for(var j = 1; j < allTextLines.length; j++){
+                    var line = allTextLines[j].split(',');
+                    line.splice(0,4);
+                    sum = sum + parseInt(line[i]);
+                }
+                totalConfirmedTimeline.push(sum);
+            }
+            totalConfirmedTimeline[0] = 0;
+            //alert(totalConfirmedTimeline);
+               
+            confirmedData = [];
+            for(var i = 1; i < allTextLines.length; i++){
+                line = allTextLines[i].split(',');
+                if(line[0] === province && line[1] === country){
+                    line.splice(0,4);
+                    for(var j = 0; j < line.length; j++){
+                        confirmedData.push(parseInt(line[j]));
+                    }
+                }
+            }
+            confirmedData[0] = 0;
+            //alert(confirmedData);
+            
+            deathsData = [];
+            allTextLines = deaths.split(/\r\n|\n/);
+            for(var i = 1; i < allTextLines.length; i++){
+                line = allTextLines[i].split(',');
+                if(line[0] === province && line[1] === country){
+                    line.splice(0,4);
+                    for(var j = 0; j < line.length; j++){
+                        deathsData.push(parseInt(line[j]));
+                    }
+                }
+            }
+            deathsData[0] = 0;
+            //alert(deathsData);
+            
+            totalDeathsTimeline = [];
+            for(var i = 0; i < dates.length; i++){
+                var sum = 0;
+                for(var j = 1; j < allTextLines.length; j++){
+                    var line = allTextLines[j].split(',');
+                    line.splice(0,4);
+                    sum = sum + parseInt(line[i]);
+                }
+                totalDeathsTimeline.push(sum);
+            }
+            totalDeathsTimeline[0] = 0;
+            //alert(totalDeathsTimeline);
+            
+            recoveredData = [];
+            allTextLines = recovered.split(/\r\n|\n/);
+            for(var i = 1; i < allTextLines.length; i++){
+                line = allTextLines[i].split(',');
+                if(line[0] === province && line[1] === country){
+                    line.splice(0,4);
+                    for(var j = 0; j < line.length; j++){
+                        recoveredData.push(parseInt(line[j]));
+                    }
+                }
+            }
+            recoveredData[0] = 0;
+            //alert(recoveredData);
+            
+            totalRecoveredTimeline = [];
+            for(var i = 0; i < dates.length; i++){
+                var sum = 0;
+                for(var j = 1; j < allTextLines.length; j++){
+                    var line = allTextLines[j].split(',');
+                    line.splice(0,4);
+                    sum = sum + parseInt(line[i]);
+                }
+                totalRecoveredTimeline.push(sum);
+            }
+            totalRecoveredTimeline[0] = 0;
+            //alert(totalRecoveredTimeline);
+            
+            confirmedDataPoints = [];
+            deathsDataPoints = [];
+            recoveredDataPoints = [];
+            for(var i = 0; i < dates.length; i++){
+                if(country === "Total"){
+                    confirmedDataPoints.push({x: dates[i], y: totalConfirmedTimeline[i]});
+                    deathsDataPoints.push({x: dates[i], y: totalDeathsTimeline[i]});
+                    recoveredDataPoints.push({x: dates[i], y: totalRecoveredTimeline[i]}); 
+                }else{
+                    confirmedDataPoints.push({x: dates[i], y: confirmedData[i]});
+                    deathsDataPoints.push({x: dates[i], y: deathsData[i]});
+                    recoveredDataPoints.push({x: dates[i], y: recoveredData[i]});  
+                }
+            }
+            
+            var chart_title = "";
+            if(province === ''){
+                chart_title = "COVID19 Development - " + country;
+            }else{
+                chart_title = "COVID19 Development - " + province + ", " + country;  
+            }
+            var chart = new CanvasJS.Chart("chartContainer", {
+                title:{
+                    text: chart_title
+                },
+                axisY:[{
+                    title: "Cases",
+                    lineColor: "#C24642",
+                    tickColor: "#C24642",
+                    labelFontColor: "#C24642",
+                    titleFontColor: "#C24642",
+                    //suffix: "k"
+                },
+                {
+                    title: "Recoveries",
+                    lineColor: "#369EAD",
+                    tickColor: "#369EAD",
+                    labelFontColor: "#369EAD",
+                    titleFontColor: "#369EAD",
+                    //suffix: "k"
+                }],
+                axisY2: {
+                    title: "Deaths",
+                    lineColor: "#7F6084",
+                    tickColor: "#7F6084",
+                    labelFontColor: "#7F6084",
+                    titleFontColor: "#7F6084",
+                    //prefix: "$",
+                    //suffix: "k"
+                },
+                toolTip: {
+                    shared: true
+                },
+                legend: {
+                    cursor: "pointer",
+                    itemclick: toggleDataSeries
+                },
+                data: [{
+                    type: "line",
+                    name: "Cases",
+                    color: "#C24642",
+                    axisYIndex: 0,
+                    showInLegend: true,
+                    dataPoints: confirmedDataPoints
+                },
+                {
+                    type: "line",
+                    name: "Recoveries",
+                    color: "#369EAD",
+                    showInLegend: true,
+                    axisYIndex: 1,
+                    dataPoints: recoveredDataPoints
+                },
+                {
+                    type: "line",
+                    name: "Deaths",
+                    color: "#7F6084",
+                    axisYType: "secondary",
+                    showInLegend: true,
+                    dataPoints: deathsDataPoints
+                }]
+            });
+            chart.render();
+        }
+    }
+    
+    function setUpMap(){
+        setCountries(setCountriesCallback);
+    }
+
+    setCountries = function(callback){
+        var data = null;
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var data = response["affected_countries"];
+                var result = [];
+                for(var i = 0; i < data.length;i++){
+                    result.push(data[i].toString());
+                }
+                callback(result);
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/affected.php");
+        xhr.setRequestHeader("x-rapidapi-host", api_host);
+        xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+        xhr.send(data);
+    }
+    
+    function setCountriesCallback(data){
+        countries = data;
+        setCountryData(countryDataCallback);
+    }
+       
+    setCountryData = function(callback){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var countries_stat = response["countries_stat"];
+                var result = [];
+                var text_result = [];
+                for(var i = 0; i < countries.length; i++){
+                    for(var j = 0; j < countries_stat.length; j++){
+                        if(countries[i] == countries_stat[j]["country_name"]){
+                            //result.push(data[j]["cases"] + "," + data[j]["deaths"] + "," + data[j]["total_recovered"]);
+                            //var rate = parseInt(countries_stat[j]["deaths"].replace(",",".")) / parseInt(countries_stat[j]["cases"].replace(",","."));
+                            result.push(parseInt(countries_stat[j]["cases"].replace(",","")));
+                            text_result.push("Deaths: " + countries_stat[j]["deaths"] +" Recoveries: " + countries_stat[j]["total_recovered"]);
+                            break;
+                        }
+                    }
+                }
+                callback(result, text_result);
+                //return result;
+                //document.getElementById("textField").innerHTML = response["countries_stat"][0]["country_name"];
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/cases_by_country.php");
+        xhr.setRequestHeader("x-rapidapi-host", "coronavirus-monitor.p.rapidapi.com");
+        xhr.setRequestHeader("x-rapidapi-key", "c568655970msh79006d28587cddep1a02e0jsnb54713e63de1");
+
+        xhr.send(data);
+    }
+    
+    function countryDataCallback(cdata,tdata){
+        country_data = cdata;
+        country_text = tdata;
+        var data = [{
+            type: 'choropleth',
+            locationmode: 'country names',
+            locations: countries,
+            zmin: 0,
+            zmax: 30000,
+            z: country_data,
+            text: country_text,
+            autocolorscale: true,
+            colorscale: 'Reds',
+            colorbar: {
+                title: 'Cases',
+                //ticksuffix: '%',
+                showticksuffix: 'last'
+            },
+            line: {
+                color: 'black'
+            }
+        }];
+
+        var layout = {
+        title: 'COVID19 Map',
+            geo:{
+                scope: 'world',
+                countrycolor: 'rgb(255, 255, 255)',
+                showland: true,
+                landcolor: 'rgb(217, 217, 217)',
+                showlakes: true,
+                lakecolor: 'rgb(255, 255, 255)',
+                subunitcolor: 'rgb(255, 255, 255)',
+                lonaxis: {},
+                lataxis: {}
+            }
+        };
+        Plotly.newPlot("map", data, layout, {showLink: false});
+    }
+         
+    function setUpRanking(){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var countries = response["countries_stat"];
+                var myList = document.getElementById("ranking");
+                for(var i = 0; i < 10; i++){
+                    var table = document.getElementById("table");
+                    var row = table.insertRow(table.rows.length);
+                    var cell1 = row.insertCell(0);
+                    var cell2 = row.insertCell(1);
+                    var cell3 = row.insertCell(2);
+                    var cell4 = row.insertCell(3);
+                    var cell5 = row.insertCell(4);
+
+                    cell1.innerHTML = i+1;
+                    cell2.innerHTML = countries[i]["country_name"];
+                    cell3.innerHTML = countries[i]["cases"];
+                    cell4.innerHTML = countries[i]["deaths"];
+                    cell5.innerHTML = countries[i]["total_recovered"];
+                }
+                //document.getElementById("textField").innerHTML = response["countries_stat"][0]["country_name"];
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/cases_by_country.php");
+        xhr.setRequestHeader("x-rapidapi-host", api_host);
+        xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+        xhr.send(data);
+    }
+    
+    function getCountryData(country){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+        
+        if(country === "Total"){
+            xhr.addEventListener("readystatechange", function () {
+                if (this.readyState === this.DONE) {
+                    var response = JSON.parse(this.responseText);
+                    //document.getElementById("country").innerHTML = country;
+                    document.getElementById("cases").innerHTML = response["total_cases"];
+                    document.getElementById("deaths").innerHTML = response["total_deaths"];
+                    document.getElementById("recovered").innerHTML = response["total_recovered"];
+                }
+            });
+
+            xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php");
+            xhr.setRequestHeader("x-rapidapi-host", api_host);
+            xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+            xhr.send(data);   
+        }else{
+            xhr.addEventListener("readystatechange", function () {
+                if (this.readyState === this.DONE) {
+                    var response = JSON.parse(this.responseText);
+                    var countries = response["countries_stat"];
+                    for(var i = 0; i < countries.length; i++){
+                        if(countries[i]["country_name"] === country){
+                            //document.getElementById("country").innerHTML = countries[i]["country_name"];
+                            document.getElementById("cases").innerHTML = countries[i]["cases"];
+                            document.getElementById("deaths").innerHTML = countries[i]["deaths"];
+                            document.getElementById("recovered").innerHTML = countries[i]["total_recovered"];
+                        }
+                    }
+                    //document.getElementById("textField").innerHTML = response["countries_stat"][0]["country_name"];
+                }
+            });
+
+            xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/cases_by_country.php");
+            xhr.setRequestHeader("x-rapidapi-host", api_host);
+            xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+            xhr.send(data);   
+        }
+    }
+    
+    function setupDropDownMenu(){
+        var data = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === this.DONE) {
+                var response = JSON.parse(this.responseText);
+                var countries = response["affected_countries"];
+                countries.sort();
+                var select = document.getElementById("select");
+                for(var i = 0; i < countries.length;i++){
+                    var opt = document.createElement('option');
+                    opt.value = countries[i].toString();
+                    opt.innerHTML = countries[i];
+                    select.appendChild(opt);
+                }       
+            }
+        });
+
+        xhr.open("GET", "https://coronavirus-monitor.p.rapidapi.com/coronavirus/affected.php");
+        xhr.setRequestHeader("x-rapidapi-host", api_host);
+        xhr.setRequestHeader("x-rapidapi-key", api_key);
+
+        xhr.send(data);
+    }
+    
+    function countrySelected(){
+        getCountryData(this.value);
+    }
+    
+    function setUpWebsite(){
+        setupDropDownMenu();
+        document.getElementById("select").onclick = countrySelected;
+        document.getElementById("select").click();
+        setUpRanking();
+        setUpMap();
+        setGraphs("","Total");   
+    }
+    
+    setUpWebsite();
+    
+</script>
+</body>
+</html> 
